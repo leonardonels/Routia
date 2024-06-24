@@ -1,21 +1,166 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div id="map" style="height: 600px;"></div>
+<div class="container-fluid">
+    <div class="row">
+        <!-- Sezione mappa -->
+        <div class="col-md-8">
+            <div id="map" style="height: 600px;"></div>
+        </div>
+        <!-- Sezione inserimento punti -->
+        <div class="col-md-4">
+            <h2>Inserisci Punti</h2>
+            <form id="routeForm">
+                <div class="form-group">
+                    <input type="text" id="start" name="start" class="form-control" placeholder="punto di partenza*" required>
+                </div>
+                <div class="form-group">
+                    <input type="text" id="waypoints" name="waypoints" class="form-control" placeholder="tappe intermedie (separate da una virgola)">
+                </div>
+                <div class="form-group">
+                    <input type="text" id="end" name="end" class="form-control" placeholder="punto di arrivo*" required>
+                </div>
+                <button type="button" class="btn btn-primary" onclick="calculateRoute()">Calcola Percorso</button>
+                <div id="route-info" class="mt-3">
+                    <p><span id="route-length"></span></p>
+                    <p><span id="route-time"></span></p>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 
-<!-- Include Leaflet CSS -->
+<!-- Includere Leaflet CSS -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
 
-<!-- Include Leaflet JavaScript -->
+<!-- Includere Leaflet JavaScript -->
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 
-<script>
-    // Initialize the map
-    var map = L.map('map').setView([44.647128, 10.925226], 9); // Coordinates of the initial view
+<!-- Includere Leaflet Control Geocoder CSS e JavaScript -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" />
+<script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
 
-    // Add OpenStreetMap tiles
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-    }).addTo(map);
+<!-- Include Leaflet Routing Machine JavaScript per il calcolo del percorso -->
+<script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.js"></script>
+
+<style>
+    .leaflet-routing-container {
+        display: none;
+    }
+</style>
+
+<!-- Script JavaScript per inizializzare la mappa e interagire con Leaflet -->
+<script>
+    var map;
+    var routeControl;
+
+    // Inizializza la mappa Leaflet
+    function initMap() {
+        map = L.map('map').setView([44.6475, 10.9253], 9); // Coordinate di Modena
+
+        // Aggiungi i tile di OpenStreetMap
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+    }
+
+    // Esegui initMap al caricamento della pagina
+    document.addEventListener('DOMContentLoaded', function() {
+        initMap();
+    });
+        
+    // Funzione per calcolare il percorso utilizzando Leaflet Routing Machine
+    function calculateRoute() {
+        var start = document.getElementById('start').value;
+        var end = document.getElementById('end').value;
+        var waypointsInput = document.getElementById('waypoints').value;
+        var waypoints = waypointsInput ? waypointsInput.split(',').map(function(waypoint) {
+            return waypoint.trim();
+        }) : [];
+
+        // Geocodifica i punti inseriti
+        var geocoder = L.Control.Geocoder.nominatim();
+        var startLatLng, endLatLng, waypointsLatLng = [];
+
+        geocoder.geocode(start, function(results) {
+            if (results.length > 0) {
+                startLatLng = results[0].center;
+                geocoder.geocode(end, function(results) {
+                    if (results.length > 0) {
+                        endLatLng = results[0].center;
+                        if (waypoints.length > 0) {
+                            var geocodePromises = waypoints.map(function(waypoint) {
+                                return new Promise(function(resolve, reject) {
+                                    geocoder.geocode(waypoint, function(results) {
+                                        if (results.length > 0) {
+                                            resolve(results[0].center);
+                                        } else {
+                                            reject('No results found for waypoint: ' + waypoint);
+                                        }
+                                    });
+                                });
+                            });
+
+                            Promise.all(geocodePromises).then(function(results) {
+                                waypointsLatLng = results;
+                                plotRoute(startLatLng, endLatLng, waypointsLatLng);
+                            }).catch(function(error) {
+                                console.error(error);
+                                alert('Errore nella geocodifica delle tappe intermedie.');
+                            });
+                        } else {
+                            plotRoute(startLatLng, endLatLng, waypointsLatLng);
+                        }
+                    } else {
+                        alert('Nessun risultato trovato per il punto di arrivo.');
+                    }
+                });
+            } else {
+                alert('Nessun risultato trovato per il punto di partenza.');
+            }
+        });
+    }
+
+    // Funzione per tracciare il percorso sulla mappa
+    function plotRoute(startLatLng, endLatLng, waypointsLatLng) {
+        // Rimuovi il percorso precedente se esiste
+        if (routeControl !== undefined) {
+            map.removeControl(routeControl);
+        }
+
+        // Configura il percorso
+        routeControl = L.Routing.control({
+            waypoints: [
+                L.latLng(startLatLng),
+                ...waypointsLatLng.map(function(waypoint) { return L.latLng(waypoint); }),
+                L.latLng(endLatLng)
+            ],
+            geocoder: L.Control.Geocoder.nominatim(),
+            language: 'it',
+            lineOptions: {
+                styles: [{ color: '#3388ff', opacity: 1, weight: 5 }]
+            },
+            showAlternatives: true,
+            altLineOptions: {
+                styles: [{ color: '#ff5733', opacity: 1, weight: 5 }]
+            },
+            createMarker: function() { return null; }, // Non creare marker per default
+            fitSelectedRoutes: false,
+            routeWhileDragging: true,
+            show: false // Non mostrare il pannello delle indicazioni stradali
+        }).addTo(map);
+
+        // Aggiorna le informazioni del percorso (lunghezza e tempo)
+        routeControl.on('routesfound', function(e) {
+            var routes = e.routes;
+            if (routes.length > 0) {
+                var route = routes[0];
+                var routeLength = (route.summary.totalDistance / 1000).toFixed(2);
+                var routeTime = (route.summary.totalTime / 3600).toFixed(2);
+                document.getElementById('route-length').innerText = 'Lunghezza del percorso: ' + routeLength + ' km';
+                document.getElementById('route-time').innerText = 'Tempo di viaggio previsto: ' + routeTime + ' ore';
+            }
+        });
+    }
 </script>
 {% endblock %}
