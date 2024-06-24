@@ -69,10 +69,11 @@
                 </ul>
                 <ul class="navbar-nav ml-auto"> <!-- Utilizza ml-auto per allineare a destra -->
                     {% if not user.is_authenticated %}
-                        <li class="nav-item"><a class="nav-link" href="{% url 'home' %}">login</a></li>
-                        <li class="nav-item"><a class="nav-link" href="{% url 'home' %}">signup</a></li>
+                        <li class="nav-item"><a class="nav-link" href="{% url 'login' %}">login</a></li>
+                        <li class="nav-item"><a class="nav-link" href="{% url 'signup' %}">signup</a></li>
                     {% else %}
-                        <li class="nav-item"><a class="nav-link" href="#" onclick="logout()">Logout ({{ user }})</a></li>
+                        <li class="nav-item"><a class="nav-link" href="{% url 'home' %}">{{ user }}</a></li>
+                        <li class="nav-item"><a class="nav-link" href="{% url 'logout' %}">logout</a></li>
                     {% endif %}
                 </ul>
             </div>
