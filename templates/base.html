@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ site_title }}</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #333; /* Sfondo grigio molto scuro */
+            color: #fff; /* Testo bianco per contrasto */
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        .navbar, .footer {
+            background-color: #222;
+            color: white;
+        }
+
+        .navbar .nav-link, .navbar-brand {
+            color: white !important;
+        }
+
+        .navbar .nav-link:hover, .navbar-brand:hover {
+            color: #fff !important;
+        }
+
+        .content-wrapper {
+            background-color: #333; /* Contenuto al centro a fondo grigio molto scuro */
+            padding: 20px;
+            border-radius: 10px;
+            <!--
+                box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+            -->
+            color: #fff; /* Testo bianco per contrasto */
+            flex: 1;
+        }
+
+        footer.footer {
+            background-color: #222; /* Sfondo footer grigio più scuro */
+            color: white; /* Testo bianco */
+            text-align: left; /* Allinea il testo a sinistra */
+            padding: 10px 0;
+            width: 100%;
+        }
+
+        footer.footer p {
+            color: white; /* Colore del testo del footer */
+            margin-left: 20px;
+        }
+    </style>
+</head>
+<body>
+    <!-- navbar -->
+    <nav class="navbar navbar-expand-lg navbar-light">
+        <div class="container">
+            <a class="navbar-brand" href="{% url 'home' %}"><b>ROUTIA</b></a>
+            <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarSupportedContent">
+                <ul class="navbar-nav mr-auto"> <!-- Utilizza mr-auto per allineare a sinistra -->
+                    <li class="nav-item"><a class="nav-link" href="{% url 'home' %}">tour</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{% url 'home' %}">planner</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{% url 'home' %}">blog</a></li>
+                </ul>
+                <ul class="navbar-nav ml-auto"> <!-- Utilizza ml-auto per allineare a destra -->
+                    {% if not user.is_authenticated %}
+                        <li class="nav-item"><a class="nav-link" href="{% url 'home' %}">login</a></li>
+                        <li class="nav-item"><a class="nav-link" href="{% url 'home' %}">signup</a></li>
+                    {% else %}
+                        <li class="nav-item"><a class="nav-link" href="#" onclick="logout()">Logout ({{ user }})</a></li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </nav>
+    <!-- main content -->
+    <main class="container mt-4 content-wrapper">
+        {% block content %}
+
+        {% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer mt-4">
+        <div class="container">
+            <p>© 2024 Leonardonels</p>
+        </div>
+    </footer>
+
+    <!-- logout script -->
+    <script>
+        function logout() {
+            location.href = "{% url 'home' %}";
+        }
+    </script>
+    <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.11.0/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script>
+</body>
+</html>
