@@ -21,4 +21,5 @@ from . import views
 urlpatterns = [
     path('admin/', admin.site.urls),
     re_path(r'^$|^home/?$', views.home, name='home'),
+    path('maps/', include('maps.urls')),
 ]
