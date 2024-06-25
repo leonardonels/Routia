@@ -20,8 +20,8 @@
                 <div class="form-group">
                     <input type="text" id="end" name="end" class="form-control" placeholder="punto di arrivo*" value="{% if route %}{{ route.end }}{% endif %}" required>
                 </div>
-                <button type="button" class="btn btn-primary" onclick="calculateRoute()">Calcola Percorso</button>
-                <button type="button" class="btn btn-success" onclick="saveRoute()">Salva Percorso</button>
+                <button type="button" class="btn btn-primary btn-block" onclick="calculateRoute()">Calcola Percorso</button>
+                <button type="button" class="btn btn-success btn-block mt-3" onclick="saveRoute()">Salva Percorso</button>
                 <input type="hidden" id="generated-waypoints" name="generated-waypoints">
                 <div id="route-info" class="mt-3">
                     <p><span id="route-length"></span></p>
@@ -65,7 +65,7 @@
         // Aggiungi i tile di OpenStreetMap
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-        }).addTo(map);
+        }).addTo(map);        
 
         // Carica il percorso dal database se esiste
         {% if route %}
