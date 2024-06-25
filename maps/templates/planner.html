@@ -93,6 +93,7 @@
         var startLatLng, endLatLng, waypointsLatLng = [];
     
         geocoder.geocode(start, function(results) {
+            console.log(results);
             if (results.length > 0) {
                 startLatLng = results[0].center;
                 geocoder.geocode(end, function(results) {
