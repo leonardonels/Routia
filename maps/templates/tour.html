@@ -87,10 +87,55 @@
 <!-- Includere Leaflet JavaScript -->
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 
+<!-- Includere Leaflet Control Geocoder CSS e JavaScript -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" />
+<script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
+
+<!-- Include Leaflet Routing Machine JavaScript per il calcolo del percorso -->
+<script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.js"></script>
+
+<style>
+    .leaflet-routing-container {
+        display: none;
+    }
+</style>
+
 <script>
-document.addEventListener('DOMContentLoaded', function() {
     // Inizializza le mappe per ogni percorso
     {% for route in routes %}
+    document.addEventListener('DOMContentLoaded', function() {
+        var map{{ route.id }} = L.map('map{{ route.id }}');
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map{{ route.id }});
+    
+        var waypoints{{ route.id }} = JSON.parse('{{ route.waypoints|escapejs }}');
+        
+        // Crea un array di punti di controllo per il routing
+        var waypoints = waypoints{{ route.id }}.map(function(point) {
+            return L.latLng(point.lat, point.lng);
+        });
+    
+        // Configura il controllo di routing
+        L.Routing.control({
+            waypoints: waypoints,
+            routeWhileDragging: false,
+            geocoder: L.Control.Geocoder.nominatim(),
+            language: 'it',
+            lineOptions: {
+                styles: [{color: '#3388ff', opacity: 1, weight: 3}]
+            },
+            showAlternatives: false,
+            fitselectedroutes: true,
+            createMarker: function() { return null; } // Non creare marker per default
+        }).addTo(map{{ route.id }});
+    });
+    {% endfor %}
+</script>
+{% endblock %}
+
+<!--
+{% for route in routes %}
         var map{{ route.id }} = L.map('map{{ route.id }}').setView([44.6475, 10.9253], 9);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
@@ -102,8 +147,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
 
         L.polyline(latlngs, {color: 'blue'}).addTo(map{{ route.id }});
+
         map{{ route.id }}.fitBounds(L.polyline(latlngs).getBounds());
     {% endfor %}
-});
-</script>
-{% endblock %}
+-->
