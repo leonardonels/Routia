@@ -39,16 +39,6 @@
 <div class="container">
     <h1 class="mt-4">Percorsi</h1>
     <form action="/maps/tour/filter/" method="GET">
-    <!--
-        <select name="order_by">
-            <option value="id" {% if order_by == 'id' %}selected{% endif %}>Ordina per ID (crescente)</option>
-            <option value="-id" {% if order_by == '-id' %}selected{% endif %}>Ordina per ID (decrescente)</option>
-            <option value="distance" {% if order_by == 'distance' %}selected{% endif %}>Ordina per distanza (crescente)</option>
-            <option value="-distance" {% if order_by == '-distance' %}selected{% endif %}>Ordina per distanza (decrescente)</option>
-            <option value="travel_time" {% if order_by == 'travel_time' %}selected{% endif %}>Ordina per tempo (crescente)</option>
-            <option value="-travel_time" {% if order_by == '-travel_time' %}selected{% endif %}>Ordina per tempo (decrescente)</option>
-        </select>
-    -->
         <input type="text" class='col-md-2' name="start_search" placeholder="Cerca per partenza" value="{{ start_search_query }}">
         <input type="text" class='col-md-2' name="end_search" placeholder="Cerca per arrivo" value="{{ end_search_query }}">
         <input type="text" class='col-md-1' name="min_km" placeholder="Min km" value="{{ request.GET.min_km }}" inputmode="numeric">
@@ -66,7 +56,7 @@
                 <div class="card-body">
                     <h5 class="card-title">{{ route.start }} → {{ route.end }}</h5>
                     <p>Lunghezza del percorso: {{ route.distance }} km</p>
-                    <p>Tempo di viaggio: {{ route.travel_time }} ore</p>
+                    <p>Tempo di viaggio: <span class="travel-time" data-seconds="{{ route.travel_time }}"></span></p> <!-- Utilizza data- per passare i secondi -->
                     <form action="/maps/planner/" method="post" style="display: flex; justify-content: flex-end; align-items: center;">
                         {% csrf_token %}
                         <input type="hidden" name="route_id" value="{{ route.id }}">
@@ -131,23 +121,21 @@
         }).addTo(map{{ route.id }});
     });
     {% endfor %}
+
+    // Funzione per formattare il tempo da secondi a ore e minuti
+    document.addEventListener('DOMContentLoaded', function() {
+        var travelTimes = document.querySelectorAll('.travel-time');
+        travelTimes.forEach(function(item) {
+            var seconds = parseInt(item.getAttribute('data-seconds'));
+            var formattedTime = formatHours(seconds);
+            item.textContent = formattedTime;
+        });
+    });
+
+    function formatHours(seconds) {
+        var hours = Math.floor(seconds / 3600);
+        var minutes = Math.floor((seconds % 3600) / 60);
+        return hours + 'h ' + minutes + 'min';
+    }
 </script>
 {% endblock %}
-
-<!--
-{% for route in routes %}
-        var map{{ route.id }} = L.map('map{{ route.id }}').setView([44.6475, 10.9253], 9);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-        }).addTo(map{{ route.id }});
-
-        var waypoints = JSON.parse('{{ route.waypoints|escapejs }}');
-        var latlngs = waypoints.map(function(point) {
-            return [point.lat, point.lng];
-        });
-
-        L.polyline(latlngs, {color: 'blue'}).addTo(map{{ route.id }});
-
-        map{{ route.id }}.fitBounds(L.polyline(latlngs).getBounds());
-    {% endfor %}
--->

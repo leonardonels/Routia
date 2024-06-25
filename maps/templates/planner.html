@@ -163,11 +163,11 @@
             if (routes.length > 0) {
                 var route = routes[0];
                 var routeLength = (route.summary.totalDistance / 1000).toFixed(2);
-                var routeTime = (route.summary.totalTime / 3600).toFixed(2);
-                document.getElementById('route-length').innerText = 'Lunghezza del percorso: ' + routeLength + 'km';
-                document.getElementById('route-time').innerText = 'Tempo di viaggio previsto: ' + routeTime + 'h';
+                var routeTime = formatHours(route.summary.totalTime);
+                document.getElementById('route-length').innerText = 'Lunghezza del percorso: ' + routeLength + ' km';
+                document.getElementById('route-time').innerText = 'Tempo di viaggio previsto: ' + routeTime;
                 document.getElementById('distance').innerText = routeLength;
-                document.getElementById('time').innerText = routeTime;
+                document.getElementById('time').innerText = route.summary.totalTime; // Salva il tempo in secondi
 
                 // Memorizza i waypoints generati come stringa JSON
                 var generatedWaypoints = route.waypoints.map(function(waypoint) {
@@ -176,8 +176,31 @@
                 document.getElementById('generated-waypoints').value = JSON.stringify(generatedWaypoints);
             }
         });
+
+        // Aggiorna il percorso quando si seleziona un percorso alternativo
+        routeControl.on('routeselected', function(e) {
+            var route = e.route;
+            var routeLength = (route.summary.totalDistance / 1000).toFixed(2);
+            var routeTime = formatHours(route.summary.totalTime);
+            document.getElementById('route-length').innerText = 'Lunghezza del percorso: ' + routeLength + ' km';
+            document.getElementById('route-time').innerText = 'Tempo di viaggio previsto: ' + routeTime;
+            document.getElementById('distance').innerText = routeLength;
+            document.getElementById('time').innerText = route.summary.totalTime; // Salva il tempo in secondi
+
+            // Memorizza i waypoints del percorso selezionato come stringa JSON
+            var generatedWaypoints = route.waypoints.map(function(waypoint) {
+                return { lat: waypoint.latLng.lat, lng: waypoint.latLng.lng };
+            });
+            document.getElementById('generated-waypoints').value = JSON.stringify(generatedWaypoints);
+        });
     }
 
+    // Funzione per formattare il tempo da secondi a ore e minuti
+    function formatHours(seconds) {
+        var hours = Math.floor(seconds / 3600);
+        var minutes = Math.floor((seconds % 3600) / 60);
+        return hours + 'h ' + minutes + 'min';
+    }
 
     // Funzione per tracciare il percorso utilizzando i waypoints salvati
     function plotRouteWithWaypoints(waypoints) {
