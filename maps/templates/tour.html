@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+    .card-body {
+        background-color: #222;
+        color: white;
+    }
+    .card {
+        border: none;
+        border-radius: 8px; /* Aggiungi i bordi arrotondati */       
+        overflow: hidden; /* Assicura che i bordi arrotondati siano applicati correttamente */
+    }
+    .map {
+        border-radius: 4px 4px 0 0;
+    }
+</style>
+<div class="container">
+    <h1 class="mt-4">Percorsi</h1>
+    <form action="/maps/tour/filter/" method="GET">
+    <!--
+        <select name="order_by">
+            <option value="id" {% if order_by == 'id' %}selected{% endif %}>Ordina per ID (crescente)</option>
+            <option value="-id" {% if order_by == '-id' %}selected{% endif %}>Ordina per ID (decrescente)</option>
+            <option value="distance" {% if order_by == 'distance' %}selected{% endif %}>Ordina per distanza (crescente)</option>
+            <option value="-distance" {% if order_by == '-distance' %}selected{% endif %}>Ordina per distanza (decrescente)</option>
+            <option value="travel_time" {% if order_by == 'travel_time' %}selected{% endif %}>Ordina per tempo (crescente)</option>
+            <option value="-travel_time" {% if order_by == '-travel_time' %}selected{% endif %}>Ordina per tempo (decrescente)</option>
+        </select>
+    -->
+        <input type="text" class='col-md-2' name="start_search" placeholder="Cerca per partenza" value="{{ start_search_query }}">
+        <input type="text" class='col-md-2' name="end_search" placeholder="Cerca per arrivo" value="{{ end_search_query }}">
+        <input type="text" class='col-md-1' name="min_km" placeholder="Min km" value="{{ request.GET.min_km }}" inputmode="numeric">
+        <input type="text" class='col-md-1' name="max_km" placeholder="Max km" value="{{ request.GET.max_km }}" inputmode="numeric">
+        <input type="text" class='col-md-1' name="min_time" placeholder="Min time" value="{{ request.GET.min_time }}" inputmode="numeric">
+        <input type="text" class='col-md-1' name="max_time" placeholder="Max time" value="{{ request.GET.max_time }}" inputmode="numeric">
+        <button type="submit" class="btn btn-primary">Filtra</button>
+    </form>
+
+    <div class="row mt-3" id="masonry-container">
+        {% for route in routes %}
+        <div class="col-md-4 mb-4">
+            <div class="card">
+                <div id="map{{ route.id }}" class="map" style="height: 200px;"></div>
+                <div class="card-body">
+                    <h5 class="card-title">{{ route.start }} → {{ route.end }}</h5>
+                    <p>Distanza: {{ route.distance }} km</p>
+                    <p>Tempo: {{ route.travel_time }} ore</p>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Includere Leaflet CSS -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+
+<!-- Includere Leaflet JavaScript -->
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Inizializza le mappe per ogni percorso
+    {% for route in routes %}
+        var map{{ route.id }} = L.map('map{{ route.id }}').setView([44.6475, 10.9253], 9);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map{{ route.id }});
+
+        var waypoints = JSON.parse('{{ route.waypoints|escapejs }}');
+        var latlngs = waypoints.map(function(point) {
+            return [point.lat, point.lng];
+        });
+
+        L.polyline(latlngs, {color: 'blue'}).addTo(map{{ route.id }});
+        map{{ route.id }}.fitBounds(L.polyline(latlngs).getBounds());
+    {% endfor %}
+});
+</script>
+{% endblock %}

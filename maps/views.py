@@ -2,6 +2,7 @@ from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from .models import Route
+import json
 
 def planner(request):
     return render(request, 'planner.html')
@@ -28,3 +29,44 @@ def save_route(request):
         return JsonResponse({'status': 'success', 'route_id': route.id})
 
     return JsonResponse({'status': 'error'}, status=400)
+
+def tour_view(request):
+    routes=Route.objects.all()
+    return render(request, 'tour.html', {'routes': routes})
+
+def filter_view(request):
+    start_search_query = request.GET.get('start_search', '')
+    end_search_query = request.GET.get('ens_search', '')
+    min_km = request.GET.get('min_km')
+    max_km = request.GET.get('max_km')
+    min_time = request.GET.get('min_time')
+    max_time = request.GET.get('max_time')
+
+    if min_km == '':
+        min_km=0
+    if max_km == '':
+        max_km=100000
+    if min_time == '':
+        min_time=0
+    if max_time == '':
+        max_time=1000
+
+    if not (str(min_km).isdigit() and str(max_km).isdigit() and str(min_time).isdigit() and str(max_time).isdigit()):
+        routes=Route.objects.all()
+        return render(request, 'tour.html', {'routes': routes})
+
+    routes = Route.objects.filter(
+        start__icontains=start_search_query, 
+        end__icontains=end_search_query, 
+        distance__gte=min_km, 
+        distance__lte=max_km, 
+        travel_time__gte=min_time, 
+        travel_time__lte=max_time
+    )
+
+    return render(
+        request, 
+        'tour.html', {
+            'routes': routes, 
+        }
+    )
