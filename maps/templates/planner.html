@@ -12,13 +12,13 @@
             <h2>Tour Planner</h2>
             <form id="routeForm">
                 <div class="form-group">
-                    <input type="text" id="start" name="start" class="form-control" placeholder="punto di partenza*" required>
+                    <input type="text" id="start" name="start" class="form-control" placeholder="punto di partenza*" value="{% if route %}{{ route.start }}{% endif %}" required>
                 </div>
                 <div class="form-group">
                     <input type="text" id="waypoints" name="waypoints" class="form-control" placeholder="tappe intermedie (separate da una virgola)">
                 </div>
                 <div class="form-group">
-                    <input type="text" id="end" name="end" class="form-control" placeholder="punto di arrivo*" required>
+                    <input type="text" id="end" name="end" class="form-control" placeholder="punto di arrivo*" value="{% if route %}{{ route.end }}{% endif %}" required>
                 </div>
                 <button type="button" class="btn btn-primary" onclick="calculateRoute()">Calcola Percorso</button>
                 <button type="button" class="btn btn-success" onclick="saveRoute()">Salva Percorso</button>
@@ -66,6 +66,12 @@
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         }).addTo(map);
+
+        // Carica il percorso dal database se esiste
+        {% if route %}
+        var waypoints = JSON.parse('{{ route.waypoints|escapejs }}');
+        plotRouteWithWaypoints(waypoints);
+        {% endif %}
     }
 
     // Esegui initMap al caricamento della pagina
@@ -172,6 +178,20 @@
         });
     }
 
+
+    // Funzione per tracciare il percorso utilizzando i waypoints salvati
+    function plotRouteWithWaypoints(waypoints) {
+        if (waypoints.length < 2) {
+            console.error('Not enough waypoints to plot a route.');
+            return;
+        }
+
+        var startLatLng = waypoints[0];
+        var endLatLng = waypoints[waypoints.length - 1];
+        var waypointsLatLng = waypoints.slice(1, -1);
+
+        plotRoute(startLatLng, endLatLng, waypointsLatLng);
+    }
 
 
     // Funzione per salvare il percorso

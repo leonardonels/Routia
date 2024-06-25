@@ -1,10 +1,14 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from .models import Route
 import json
 
 def planner(request):
+    if request.method == 'POST':
+        route_id = request.POST.get('route_id')
+        route = get_object_or_404(Route, id=route_id)
+        return render(request, 'planner.html', {'route': route})
     return render(request, 'planner.html')
 
 @login_required
