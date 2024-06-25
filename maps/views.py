@@ -36,7 +36,7 @@ def save_route(request):
 
 def tour_view(request):
     routes=Route.objects.all()
-    return render(request, 'tour.html', {'routes': routes})
+    return render(request, 'tour.html', {'section': 'Percorsi', 'routes': routes})
 
 def filter_view(request):
     start_search_query = request.GET.get('start_search', '')
@@ -57,7 +57,7 @@ def filter_view(request):
 
     if not (str(min_km).isdigit() and str(max_km).isdigit() and str(min_time).isdigit() and str(max_time).isdigit()):
         routes=Route.objects.all()
-        return render(request, 'tour.html', {'routes': routes})
+        return render(request, 'tour.html', {'section': 'Percorsi', 'routes': routes})
 
     routes = Route.objects.filter(
         start__icontains=start_search_query, 
@@ -68,9 +68,10 @@ def filter_view(request):
         travel_time__lte=max_time
     )
 
-    return render(
-        request, 
-        'tour.html', {
-            'routes': routes, 
-        }
-    )
+    return render(request, 'tour.html', {'section': 'Percorsi', 'routes': routes})
+
+def saved_routes(request):
+    user=request.user
+
+    routes=Route.objects.filter(user_id=user.id)
+    return render(request, 'tour.html', {'section': 'Percorsi Salvati', 'routes': routes})

@@ -37,7 +37,7 @@
     }
 </style>
 <div class="container">
-    <h1 class="mt-4">Percorsi</h1>
+    <h1 class="mt-4">{{ section }}</h1>
     <form action="/maps/tour/filter/" method="GET">
         <input type="text" class='col-md-2' name="start_search" placeholder="Cerca per partenza" value="{{ start_search_query }}">
         <input type="text" class='col-md-2' name="end_search" placeholder="Cerca per arrivo" value="{{ end_search_query }}">

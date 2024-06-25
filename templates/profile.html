@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-4 text-center">
+        <h1>Welcome, {{ user.username }}!</h1>
+        <div class="btn-group-vertical w-100 mt-3">
+            <a href="{% url 'change_username' %}" class="btn btn-primary mb-2">Change Username</a>
+            <a href="{% url 'change_password' %}" class="btn btn-primary mb-2">Change Password</a>
+            <a href="{% url 'profile' %}" class="btn btn-dark mb-2">Create Passkey</a>
+            {% if user.is_superuser %}
+                <a href="{% url 'admin:login' %}" class="btn btn-warning mb-2">Admin Area</a>
+            {% endif %}
+            <a href="{% url 'delete_profile' %}" class="btn btn-danger">Delete Profile</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

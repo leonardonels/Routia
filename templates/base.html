@@ -65,16 +65,14 @@
                 <ul class="navbar-nav mr-auto"> <!-- Utilizza mr-auto per allineare a sinistra -->
                     <li class="nav-item"><a class="nav-link" href="/maps/tour">tour</a></li>
                     <li class="nav-item"><a class="nav-link" href="/maps/planner">planner</a></li>
-                <!--
-                    <li class="nav-item"><a class="nav-link" href="{% url 'home' %}">blog</a></li>
-                    -->
+                    <li class="nav-item"><a class="nav-link" href="/maps/saved/">saved routes</a></li>
                 </ul>
                 <ul class="navbar-nav ml-auto"> <!-- Utilizza ml-auto per allineare a destra -->
                     {% if not user.is_authenticated %}
                         <li class="nav-item"><a class="nav-link" href="{% url 'login' %}">login</a></li>
                         <li class="nav-item"><a class="nav-link" href="{% url 'signup' %}">signup</a></li>
                     {% else %}
-                        <li class="nav-item"><a class="nav-link" href="{% url 'home' %}">{{ user }}</a></li>
+                        <li class="nav-item"><a class="nav-link" href="{% url 'profile' %}">{{ user }}</a></li>
                         <li class="nav-item"><a class="nav-link" href="{% url 'logout' %}">logout</a></li>
                     {% endif %}
                 </ul>
@@ -83,6 +81,15 @@
     </nav>
     <!-- main content -->
     <main class="container mt-4 content-wrapper">
+        {% if messages %}
+            <div class="row justify-content-center">
+                <div class="col-md-4">
+                    {% for message in messages %}
+                        <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+                    {% endfor %}
+                </div>
+            </div>
+        {% endif %}
         {% block content %}{% endblock %}
     </main>
 
