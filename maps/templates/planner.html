@@ -9,7 +9,7 @@
         </div>
         <!-- Sezione inserimento punti -->
         <div class="col-md-4">
-            <h2>Inserisci Punti</h2>
+            <h2>Tour Planner</h2>
             <form id="routeForm">
                 <div class="form-group">
                     <input type="text" id="start" name="start" class="form-control" placeholder="punto di partenza*" required>
@@ -21,9 +21,13 @@
                     <input type="text" id="end" name="end" class="form-control" placeholder="punto di arrivo*" required>
                 </div>
                 <button type="button" class="btn btn-primary" onclick="calculateRoute()">Calcola Percorso</button>
+                <button type="button" class="btn btn-success" onclick="saveRoute()">Salva Percorso</button>
+                <input type="hidden" id="generated-waypoints" name="generated-waypoints">
                 <div id="route-info" class="mt-3">
                     <p><span id="route-length"></span></p>
+                    <input type="hidden" id="distance" name="distance">
                     <p><span id="route-time"></span></p>
+                    <input type="hidden" id="time" name="time">
                 </div>
             </form>
         </div>
@@ -77,11 +81,11 @@
         var waypoints = waypointsInput ? waypointsInput.split(',').map(function(waypoint) {
             return waypoint.trim();
         }) : [];
-
+    
         // Geocodifica i punti inseriti
         var geocoder = L.Control.Geocoder.nominatim();
         var startLatLng, endLatLng, waypointsLatLng = [];
-
+    
         geocoder.geocode(start, function(results) {
             if (results.length > 0) {
                 startLatLng = results[0].center;
@@ -100,7 +104,7 @@
                                     });
                                 });
                             });
-
+                            
                             Promise.all(geocodePromises).then(function(results) {
                                 waypointsLatLng = results;
                                 plotRoute(startLatLng, endLatLng, waypointsLatLng);
@@ -120,36 +124,33 @@
             }
         });
     }
-
+    
     // Funzione per tracciare il percorso sulla mappa
     function plotRoute(startLatLng, endLatLng, waypointsLatLng) {
         // Rimuovi il percorso precedente se esiste
         if (routeControl !== undefined) {
             map.removeControl(routeControl);
         }
-
+    
+        var waypoints = [startLatLng, ...waypointsLatLng, endLatLng];
+    
         // Configura il percorso
         routeControl = L.Routing.control({
-            waypoints: [
-                L.latLng(startLatLng),
-                ...waypointsLatLng.map(function(waypoint) { return L.latLng(waypoint); }),
-                L.latLng(endLatLng)
-            ],
+            waypoints: waypoints,
+            routeWhileDragging: true,
+            fitselectedroutes: false,
             geocoder: L.Control.Geocoder.nominatim(),
             language: 'it',
             lineOptions: {
-                styles: [{ color: '#3388ff', opacity: 1, weight: 5 }]
+                styles: [{color: '#3388ff', opacity: 1, weight: 5}]
             },
             showAlternatives: true,
             altLineOptions: {
-                styles: [{ color: '#ff5733', opacity: 1, weight: 5 }]
+                styles: [{color: '#ff5733', opacity: 1, weight: 5}]
             },
-            createMarker: function() { return null; }, // Non creare marker per default
-            fitSelectedRoutes: false,
-            routeWhileDragging: true,
-            show: false // Non mostrare il pannello delle indicazioni stradali
+            createMarker: function() { return null; } // Non creare marker per default
         }).addTo(map);
-
+        
         // Aggiorna le informazioni del percorso (lunghezza e tempo)
         routeControl.on('routesfound', function(e) {
             var routes = e.routes;
@@ -157,8 +158,53 @@
                 var route = routes[0];
                 var routeLength = (route.summary.totalDistance / 1000).toFixed(2);
                 var routeTime = (route.summary.totalTime / 3600).toFixed(2);
-                document.getElementById('route-length').innerText = 'Lunghezza del percorso: ' + routeLength + ' km';
-                document.getElementById('route-time').innerText = 'Tempo di viaggio previsto: ' + routeTime + ' ore';
+                document.getElementById('route-length').innerText = 'Lunghezza del percorso: ' + routeLength + 'km';
+                document.getElementById('route-time').innerText = 'Tempo di viaggio previsto: ' + routeTime + 'h';
+                document.getElementById('distance').innerText = routeLength;
+                document.getElementById('time').innerText = routeTime;
+
+                // Memorizza i waypoints generati come stringa JSON
+                var generatedWaypoints = route.waypoints.map(function(waypoint) {
+                    return { lat: waypoint.latLng.lat, lng: waypoint.latLng.lng };
+                });
+                document.getElementById('generated-waypoints').value = JSON.stringify(generatedWaypoints);
+            }
+        });
+    }
+
+
+
+    // Funzione per salvare il percorso
+    function saveRoute() {
+        var start = document.getElementById('start').value;
+        var end = document.getElementById('end').value;
+        var waypointsInput = document.getElementById('waypoints').value;
+        var waypoints = waypointsInput ? waypointsInput.split(',').map(function(point) { return point.trim(); }).join(';') : '';
+        var generatedWaypoints = document.getElementById('generated-waypoints').value;
+        var distance = document.getElementById('distance').innerText;
+        var travel_time = document.getElementById('time').innerText;
+        
+        fetch('/maps/planner/save_route/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: new URLSearchParams({
+                'start': start,
+                'end': end,
+                'waypoints': waypoints,
+                'generated_waypoints': generatedWaypoints,
+                'distance': distance,
+                'travel_time': travel_time
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                alert('Percorso salvato con successo!');
+            } else {
+                alert('Errore nel salvataggio del percorso.');
             }
         });
     }
