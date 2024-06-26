@@ -1,0 +1,150 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+    .card-body {
+        background-color: #222;
+        color: white;
+    }
+    .card {
+        border: none;
+        border-radius: 8px; /* Aggiungi i bordi arrotondati */       
+        overflow: hidden; /* Assicura che i bordi arrotondati siano applicati correttamente */
+    }
+    .map {
+        border-radius: 4px 4px 0 0;
+    }
+    .btn-outline-primary {
+        color: #007bff;
+        border-color: #007bff;
+    }
+    
+    .btn-outline-primary:hover {
+        color: #fff;
+        background-color: #007bff;
+        border-color: #007bff;
+    }
+    
+    .btn-outline-primary:focus, .btn-outline-primary.focus {
+        box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.5);
+    }
+    
+    .btn-sm {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.875rem;
+        line-height: 1.5;
+        border-radius: 0.2rem;
+    }
+</style>
+<div class="container">
+    <h1 class="mt-4">{{ section }}</h1>
+    <form action="/maps/tour/filter/" method="GET">
+        <input type="text" class='col-md-2' name="start_search" placeholder="Cerca per partenza" value="{{ start_search_query }}">
+        <input type="text" class='col-md-2' name="end_search" placeholder="Cerca per arrivo" value="{{ end_search_query }}">
+        <input type="text" class='col-md-1' name="min_km" placeholder="Min km" value="{{ request.GET.min_km }}" inputmode="numeric">
+        <input type="text" class='col-md-1' name="max_km" placeholder="Max km" value="{{ request.GET.max_km }}" inputmode="numeric">
+        <input type="text" class='col-md-1' name="min_time" placeholder="Min time" value="{{ request.GET.min_time }}" inputmode="numeric">
+        <input type="text" class='col-md-1' name="max_time" placeholder="Max time" value="{{ request.GET.max_time }}" inputmode="numeric">
+        <button type="submit" class="btn btn-primary">Filtra</button>
+    </form>
+
+    <div class="row mt-3" id="masonry-container">
+        {% for route in routes %}
+        <div class="col-md-4 mb-4">
+            <div class="card">
+                <div id="map{{ route.id }}" class="map" style="height: 200px;"></div>
+                <div class="card-body">
+                    <h5 class="card-title">{{ route.start }} → {{ route.end }}</h5>
+                    <p>Lunghezza del percorso: {{ route.distance }} km</p>
+                    <p>Tempo di viaggio: <span class="travel-time" data-seconds="{{ route.travel_time }}"></span></p> <!-- Utilizza data- per passare i secondi -->
+                    <div class="d-flex justify-content-between align-items-center">
+                        <form action="/maps/saved/delete/" method="post" class="mb-0">
+                            {% csrf_token %}
+                            <input type="hidden" name="route_id" value="{{ route.id }}">
+                            <button type="submit" class="btn btn-danger">
+                                <i class="fa fa-trash"></i> ✘
+                            </button>
+                        </form>
+                        <form action="/maps/planner/" method="post" class="mb-0 ml-2">
+                            {% csrf_token %}
+                            <input type="hidden" name="route_id" value="{{ route.id }}">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fa fa-search"></i> Visualizza percorso
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Includere Leaflet CSS -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+
+<!-- Includere Leaflet JavaScript -->
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+<!-- Includere Leaflet Control Geocoder CSS e JavaScript -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" />
+<script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
+
+<!-- Include Leaflet Routing Machine JavaScript per il calcolo del percorso -->
+<script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.js"></script>
+
+<style>
+    .leaflet-routing-container {
+        display: none;
+    }
+</style>
+
+<script>
+    // Inizializza le mappe per ogni percorso
+    {% for route in routes %}
+    document.addEventListener('DOMContentLoaded', function() {
+        var map{{ route.id }} = L.map('map{{ route.id }}');
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map{{ route.id }});
+    
+        var waypoints{{ route.id }} = JSON.parse('{{ route.waypoints|escapejs }}');
+        
+        // Crea un array di punti di controllo per il routing
+        var waypoints = waypoints{{ route.id }}.map(function(point) {
+            return L.latLng(point.lat, point.lng);
+        });
+    
+        // Configura il controllo di routing
+        L.Routing.control({
+            waypoints: waypoints,
+            routeWhileDragging: false,
+            geocoder: L.Control.Geocoder.nominatim(),
+            language: 'it',
+            lineOptions: {
+                styles: [{color: '#3388ff', opacity: 1, weight: 3}]
+            },
+            showAlternatives: false,
+            fitselectedroutes: true,
+            createMarker: function() { return null; } // Non creare marker per default
+        }).addTo(map{{ route.id }});
+    });
+    {% endfor %}
+
+    // Funzione per formattare il tempo da secondi a ore e minuti
+    document.addEventListener('DOMContentLoaded', function() {
+        var travelTimes = document.querySelectorAll('.travel-time');
+        travelTimes.forEach(function(item) {
+            var seconds = parseInt(item.getAttribute('data-seconds'));
+            var formattedTime = formatHours(seconds);
+            item.textContent = formattedTime;
+        });
+    });
+
+    function formatHours(seconds) {
+        var hours = Math.floor(seconds / 3600);
+        var minutes = Math.floor((seconds % 3600) / 60);
+        return hours + 'h ' + minutes + 'min';
+    }
+</script>
+{% endblock %}

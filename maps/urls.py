@@ -9,5 +9,5 @@ urlpatterns = [
     path('tour/', views.tour_view, name='tour'),
     path('tour/filter/', views.filter_view, name='filter'),
     path('saved/', views.saved_routes, name='saved_routes'),
-
+    path('saved/delete/', views.delete_route, name='delete_route'),
 ]

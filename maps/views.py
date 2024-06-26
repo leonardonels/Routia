@@ -1,5 +1,6 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
+from django.contrib import messages
 from django.http import JsonResponse
 from .models import Route
 import json
@@ -74,4 +75,16 @@ def saved_routes(request):
     user=request.user
 
     routes=Route.objects.filter(user_id=user.id)
-    return render(request, 'tour.html', {'section': 'Percorsi Salvati', 'routes': routes})
+    return render(request, 'saved_routes.html', {'section': 'Percorsi Salvati', 'routes': routes})
+
+@login_required
+def delete_route(request):
+    if request.method == 'POST':
+        route_id = request.POST.get('route_id')
+        route = Route.objects.filter(id=route_id, user=request.user).first()
+        if route:
+            route.delete()
+            messages.success(request, 'The route has been successfully deleted.')
+        else:
+            messages.error(request, 'Route not found or you do not have permission to delete it.')
+    return redirect('/maps/saved/')  # Assumi che esista una vista 'saved_routes'
